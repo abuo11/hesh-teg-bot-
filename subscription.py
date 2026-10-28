@@ -1,21 +1,24 @@
-from aiogram import F, Router
-from aiogram.types import CallbackQuery
+import logging
+import time
 
-from bot.keyboards.reply import main_menu
-from bot.services.subscription_service import SubscriptionError, is_subscribed
+from ..config import cfg
+from .. import db
 
-router = Router()
+log = logging.getLogger(__name__)
+_cache: dict[int, float] = {}
 
 
-@router.callback_query(F.data == "sub:check")
-async def check(c: CallbackQuery):
+async def check(bot, user_id: int):
+    """(obuna_bormi, xatolik_bormi)"""
+    if _cache.get(user_id, 0) > time.time():
+        return True, False
     try:
-        ok = await is_subscribed(c.bot, c.from_user.id, use_cache=False)
-    except SubscriptionError:
-        await c.answer("Tekshirib bo‘lmadi. Bot kanalda admin ekanini tekshiring.", show_alert=True)
-        return
+        m = await bot.get_chat_member(cfg.channel, user_id)
+    except Exception as e:
+        log.error("Obuna tekshiruvi xatosi: %s", type(e).__name__)
+        await db.log_api("subscription", f"{type(e).__name__}: {e}")
+        return False, True
+    ok = m.status in ("member", "administrator", "creator")
     if ok:
-        await c.message.answer("✅ Obuna tasdiqlandi! Botdan foydalanishingiz mumkin.", reply_markup=main_menu())
-        await c.answer()
-    else:
-        await c.answer("Hali obuna bo‘lmagansiz.", show_alert=True)
+        _cache[user_id] = time.time() + 60
+    return ok, False
