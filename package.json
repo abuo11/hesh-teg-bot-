@@ -1,0 +1,10 @@
+{
+  "name": "hashtag-ai-webapp",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Hashtag AI kabineti (build kerak emas: bot serveri shu papkani HTTPS orqali beradi)",
+  "scripts": {
+    "check": "node --check src/main.js"
+  }
+}
